@@ -16,9 +16,13 @@ public class UnitSum {
 
         @Override
         public void map(Object key, Text value, Context context) throws IOException, InterruptedException {
-           String[] pageSubrank = value.toString().split("\t");
-            double subRank = Double.parseDouble(pageSubrank[1]);
-            context.write(new Text(pageSubrank[0]), new DoubleWritable(subRank));
+            //input: 1 \t 0.12...
+            String[] toProb = value.toString().trim().split("\t");
+            String outputKey = toProb[0];
+            double outputValue = Double.parseDouble(toProb[1]);
+            context.write(new Text(outputKey), new DoubleWritable(outputValue));
+
+            //output: 1 ---> 0.12
         }
     }
 
@@ -30,11 +34,10 @@ public class UnitSum {
                 throws IOException, InterruptedException {
 
             double sum = 0;
-            for (DoubleWritable value: values) {
+            for (DoubleWritable value : values) {
                 sum += value.get();
             }
-            DecimalFormat df = new DecimalFormat("#.0000");
-            sum = Double.valueOf(df.format(sum));
+
             context.write(key, new DoubleWritable(sum));
         }
     }

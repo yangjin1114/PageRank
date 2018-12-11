@@ -13,7 +13,9 @@ import org.apache.hadoop.mapreduce.lib.output.FileOutputFormat;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 public class UnitMultiplication {
 
@@ -21,16 +23,22 @@ public class UnitMultiplication {
 
         @Override
         public void map(Object key, Text value, Context context) throws IOException, InterruptedException {
+            //1 \t 2,3,5,6...
+            //output: 1 ---> 2=1/5,...
             String line = value.toString().trim();
-            String[] fromTo = line.split("\t");
-
-            if(fromTo.length == 1 || fromTo[1].trim().equals("")) {
+            String[] FromTo = line.split("\t");
+            //to be replaced
+            if (FromTo.length != 2 || FromTo[1].trim().equals("")) {
                 return;
             }
-            String from = fromTo[0];
-            String[] tos = fromTo[1].split(",");
-            for (String to: tos) {
-                context.write(new Text(from), new Text(to + "=" + (double)1/tos.length));
+
+            String outputKey = FromTo[0];
+            String[] tos = FromTo[1].split(",");
+
+            for (String to : tos) {
+                double prob = 1.0 / tos.length;
+                String outputValue = to + "=" + prob;
+                context.write(new Text(outputKey), new Text(String.valueOf(outputValue)));
             }
         }
     }
@@ -39,7 +47,15 @@ public class UnitMultiplication {
 
         @Override
         public void map(Object key, Text value, Context context) throws IOException, InterruptedException {
-            String[] pr = value.toString().trim().split("\t");
+
+            //input: 1 \t 1, 2 \t 1,...
+
+            String line = value.toString().trim();
+            String[] pr = line.split("\t");
+            if (pr.length != 2) {
+                return;
+            }
+            //output: 1 ---> 1, 2 ---> 1,...
             context.write(new Text(pr[0]), new Text(pr[1]));
         }
     }
@@ -50,22 +66,26 @@ public class UnitMultiplication {
         @Override
         public void reduce(Text key, Iterable<Text> values, Context context)
                 throws IOException, InterruptedException {
-            List<String> transitionUnit = new ArrayList<String>();
-            double prUnit = 0;
-            for (Text value: values) {
-                if(value.toString().contains("=")) {
-                    transitionUnit.add(value.toString());
-                }
-                else {
-                    prUnit = Double.parseDouble(value.toString());
+
+            //input: 1 ---> 1, 1 ---> 2=1/5,...
+            double pr = 0;
+            Map<String, Double> map = new HashMap<String, Double>();
+
+            for (Text value : values) {
+                String curt = value.toString().trim();
+                if (curt.indexOf("=") != -1) {
+                    String[] toProb = curt.split("=");
+                    map.put(toProb[0], Double.parseDouble(toProb[1]));
+                } else {
+                    pr = Double.parseDouble(curt);
                 }
             }
-            for (String unit: transitionUnit) {
-                String outputKey = unit.split("=")[0];
-                double relation = Double.parseDouble(unit.split("=")[1]);
-                String outputValue = String.valueOf(relation * prUnit);
-                context.write(new Text(outputKey), new Text(outputValue));
+
+            for (String outputKey : map.keySet()) {
+                double outputValue = pr * map.get(outputKey);
+                context.write(new Text(outputKey), new Text(String.valueOf(outputValue)));
             }
+
         }
     }
 
