@@ -49,9 +49,9 @@ public class UnitMultiplication {
         public void map(Object key, Text value, Context context) throws IOException, InterruptedException {
 
             //input: 1 \t 1, 2 \t 1,...
-
             String line = value.toString().trim();
             String[] pr = line.split("\t");
+
             if (pr.length != 2) {
                 return;
             }
@@ -61,6 +61,13 @@ public class UnitMultiplication {
     }
 
     public static class MultiplicationReducer extends Reducer<Text, Text, Text, Text> {
+        float beta;
+
+        @Override
+        public void setup(Context context) {
+            Configuration conf = context.getConfiguration();
+            beta = conf.getFloat("beta", 0.2f);
+        }
 
 
         @Override
@@ -73,7 +80,7 @@ public class UnitMultiplication {
 
             for (Text value : values) {
                 String curt = value.toString().trim();
-                if (curt.indexOf("=") != -1) {
+                if (curt.contains("=")) {
                     String[] toProb = curt.split("=");
                     map.put(toProb[0], Double.parseDouble(toProb[1]));
                 } else {
@@ -82,7 +89,7 @@ public class UnitMultiplication {
             }
 
             for (String outputKey : map.keySet()) {
-                double outputValue = pr * map.get(outputKey);
+                double outputValue = pr * map.get(outputKey) * (1 - beta);
                 context.write(new Text(outputKey), new Text(String.valueOf(outputValue)));
             }
 
@@ -92,6 +99,8 @@ public class UnitMultiplication {
     public static void main(String[] args) throws Exception {
 
         Configuration conf = new Configuration();
+        conf.setFloat("beta", Float.parseFloat(args[3]));
+
         Job job = Job.getInstance(conf);
         job.setJarByClass(UnitMultiplication.class);
 
