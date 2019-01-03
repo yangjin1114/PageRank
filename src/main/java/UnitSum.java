@@ -76,13 +76,13 @@ public class UnitSum {
     public static void main(String[] args) throws Exception {
 
         Configuration conf = new Configuration();
-        conf.setFloat("beta", Float.parseFloat(args[2]));
+        conf.setFloat("beta", Float.parseFloat(args[3]));
 
         Job job = Job.getInstance(conf);
         job.setJarByClass(UnitSum.class);
 
         ChainMapper.addMapper(job, PassMapper.class, Object.class, Text.class, Text.class, DoubleWritable.class, conf);
-        ChainMapper.addMapper(job, BetaMapper.class, Object.class, Text.class, Text.class, DoubleWritable.class, conf);
+        ChainMapper.addMapper(job, BetaMapper.class, Text.class, DoubleWritable.class, Text.class, DoubleWritable.class, conf);
 
         job.setReducerClass(SumReducer.class);
         job.setOutputKeyClass(Text.class);

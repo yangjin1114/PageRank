@@ -9,6 +9,7 @@ public class Driver {
         //args1: dir of PageRank.txt
         //args2: dir of unitMultiplication result
         //args3: times of convergence
+        //args4: beta
         String transitionMatrix = args[0];
         String prMatrix = args[1];
         String unitState = args[2];
